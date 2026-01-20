@@ -1,0 +1,48 @@
+package com.cherry.server.product.domain;
+
+import com.cherry.server.global.common.BaseTimeEntity;
+import com.cherry.server.user.domain.User;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Getter
+@Table(name = "products")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Product extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_user_id")
+    private User seller;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    private int price;
+
+    @Enumerated(EnumType.STRING)
+    private ProductStatus status;
+
+    @Enumerated(EnumType.STRING)
+    private TradeType tradeType;
+
+    @Builder
+    public Product(User seller, String title, String description, int price, ProductStatus status, TradeType tradeType) {
+        this.seller = seller;
+        this.title = title;
+        this.description = description;
+        this.price = price;
+        this.status = status;
+        this.tradeType = tradeType;
+    }
+}
