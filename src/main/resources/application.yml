@@ -1,21 +1,18 @@
 spring:
   application:
     name: cherry-server
-  
-  # Database Configuration (Default: H2 for MVP)
+
+  # Database Configuration
   datasource:
-    url: jdbc:mysql://cherry.cdy8yc6s0cba.ap-northeast-2.rds.amazonaws.com:3306/cherry
-      ?useSSL=false
-      &serverTimezone=Asia/Seoul
-      &characterEncoding=UTF-8
+    url: jdbc:mysql://cherry.cdy8yc6s0cba.ap-northeast-2.rds.amazonaws.com:3306/cherry?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: cherry_app
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-  
+
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
-      ddl-auto: create-drop # Re-create DB on startup for MVP
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
