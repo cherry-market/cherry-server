@@ -41,13 +41,17 @@ jobs:
 
       - name: Deploy on EC2 (pull & up)
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DB_PASSWORD
           script: |
             set -e
             cd /home/ec2-user/cherry
+            echo "DB_PASSWORD=$DB_PASSWORD" > .env
             docker compose pull || docker-compose pull
             docker compose up -d || docker-compose up -d
             docker image prune -f
