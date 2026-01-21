@@ -4,10 +4,13 @@ spring:
   
   # Database Configuration (Default: H2 for MVP)
   datasource:
-    url: jdbc:h2:mem:cherrydb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
+    url: jdbc:mysql://cherry.cdy8yc6s0cba.ap-northeast-2.rds.amazonaws.com:3306/cherry
+      ?useSSL=false
+      &serverTimezone=Asia/Seoul
+      &characterEncoding=UTF-8
+    username: cherry_app
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
