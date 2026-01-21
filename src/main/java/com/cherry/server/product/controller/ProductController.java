@@ -3,10 +3,14 @@ package com.cherry.server.product.controller;
 import com.cherry.server.product.dto.ProductDetailResponse;
 import com.cherry.server.product.dto.ProductListResponse;
 import com.cherry.server.product.service.ProductService;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor
@@ -17,7 +21,7 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ProductListResponse> getProducts(
             @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int limit
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit
     ) {
         return ResponseEntity.ok(productService.getProducts(cursor, limit));
     }
