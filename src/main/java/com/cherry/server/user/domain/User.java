@@ -17,18 +17,22 @@ public class User extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String nickname;
 
+    @Column(nullable = false)
+    private String password;
+
     private String profileImageUrl;
 
     @Builder
-    public User(String email, String nickname, String profileImageUrl) {
+    public User(String email, String nickname, String password, String profileImageUrl) {
         this.email = email;
         this.nickname = nickname;
+        this.password = password;
         this.profileImageUrl = profileImageUrl;
     }
 }

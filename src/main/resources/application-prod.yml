@@ -19,3 +19,7 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:redis}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+
+# CORS Configuration (for production deployment)
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://cherriy.com,https://www.cherriy.com}
