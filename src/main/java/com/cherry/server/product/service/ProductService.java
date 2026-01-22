@@ -6,6 +6,7 @@ import com.cherry.server.product.dto.ProductListResponse;
 import com.cherry.server.product.dto.ProductSummaryResponse;
 import com.cherry.server.product.repository.ProductRepository;
 import com.cherry.server.product.repository.ProductTrendingRepository;
+import com.cherry.server.wish.repository.ProductLikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -14,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,8 +29,9 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductTrendingRepository productTrendingRepository;
+    private final ProductLikeRepository productLikeRepository;
 
-    public ProductListResponse getProducts(String cursor, int limit) {
+    public ProductListResponse getProducts(String cursor, int limit, Long userId) {
         LocalDateTime cursorCreatedAt = null;
         Long cursorId = null;
 
@@ -43,8 +47,15 @@ public class ProductService {
         }
 
         Slice<Product> slice = productRepository.findAllByCursor(cursorCreatedAt, cursorId, PageRequest.of(0, limit));
-        List<ProductSummaryResponse> items = slice.getContent().stream()
-                .map(ProductSummaryResponse::from)
+        List<Product> products = slice.getContent();
+        List<Long> productIds = products.stream()
+                .map(Product::getId)
+                .toList();
+        Set<Long> likedProductIds = userId == null || productIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(productLikeRepository.findLikedProductIds(userId, productIds));
+        List<ProductSummaryResponse> items = products.stream()
+                .map(product -> ProductSummaryResponse.from(product, likedProductIds.contains(product.getId())))
                 .toList();
         
         String nextCursor = null;
@@ -57,7 +68,7 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductDetailResponse getProduct(Long productId) {
+    public ProductDetailResponse getProduct(Long productId, Long userId) {
         // DB에서 상품 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
@@ -67,10 +78,11 @@ public class ProductService {
         productTrendingRepository.incrementViewCount(productId);
 
         // DTO로 변환하여 반환
-        return ProductDetailResponse.from(product);
+        boolean isLiked = userId != null && productLikeRepository.existsByUserIdAndProductId(userId, productId);
+        return ProductDetailResponse.from(product, isLiked);
     }
     
-    public ProductListResponse getTrending() {
+    public ProductListResponse getTrending(Long userId) {
         List<Long> topIds = productTrendingRepository.getTopTrendingProductIds(10);
         
         if (topIds.isEmpty()) {
@@ -84,10 +96,13 @@ public class ProductService {
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
 
         // Improve Sorting: O(N) instead of nested stream (O(N^2))
+        Set<Long> likedProductIds = userId == null
+                ? Collections.emptySet()
+                : new HashSet<>(productLikeRepository.findLikedProductIds(userId, topIds));
         List<ProductSummaryResponse> items = topIds.stream()
                 .filter(productMap::containsKey)
                 .map(productMap::get)
-                .map(ProductSummaryResponse::from)
+                .map(product -> ProductSummaryResponse.from(product, likedProductIds.contains(product.getId())))
                 .toList();
 
         return new ProductListResponse(items, null);

@@ -34,6 +34,8 @@ public class SecurityConfig {
         MvcRequestMatcher optionsMatcher = mvc.pattern("/**");
         optionsMatcher.setMethod(HttpMethod.OPTIONS);
         MvcRequestMatcher healthMatcher = mvc.pattern("/health");
+        MvcRequestMatcher likeStatusMatcher = mvc.pattern("/products/{productId}/like-status");
+        likeStatusMatcher.setMethod(HttpMethod.GET);
         MvcRequestMatcher productsMatcher = mvc.pattern("/products/**");
         productsMatcher.setMethod(HttpMethod.GET);
         MvcRequestMatcher authMatcher = mvc.pattern("/auth/**");
@@ -50,6 +52,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(optionsMatcher).permitAll()
                         .requestMatchers(healthMatcher).permitAll()
+                        .requestMatchers(likeStatusMatcher).authenticated()
                         .requestMatchers(productsMatcher).permitAll()
                         .requestMatchers(authMatcher).permitAll()
                         .anyRequest().authenticated())

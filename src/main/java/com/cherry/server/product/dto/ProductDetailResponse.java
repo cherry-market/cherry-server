@@ -18,12 +18,17 @@ public record ProductDetailResponse(
         List<String> imageUrls, // Dummy
         String description,
         SellerResponse seller,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean isLiked
 ) {
     @Builder
     public record SellerResponse(Long id, String nickname) {}
 
     public static ProductDetailResponse from(Product product) {
+        return from(product, false);
+    }
+
+    public static ProductDetailResponse from(Product product, boolean isLiked) {
         return ProductDetailResponse.builder()
                 .id(product.getId())
                 .title(product.getTitle())
@@ -34,6 +39,7 @@ public record ProductDetailResponse(
                 .description(product.getDescription())
                 .seller(new SellerResponse(product.getSeller().getId(), product.getSeller().getNickname()))
                 .createdAt(product.getCreatedAt())
+                .isLiked(isLiked)
                 .build();
     }
 }
