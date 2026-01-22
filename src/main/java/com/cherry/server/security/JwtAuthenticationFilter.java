@@ -54,4 +54,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         return null;
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+        
+        // 인증이 필요 없는 경로는 필터를 건너뜁니다
+        return (path.startsWith("/auth/")) ||
+               (method.equals("GET") && path.startsWith("/products/")) ||
+               (path.equals("/health"));
+    }
 }
