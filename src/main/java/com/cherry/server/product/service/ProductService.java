@@ -58,12 +58,15 @@ public class ProductService {
 
     @Transactional
     public ProductDetailResponse getProduct(Long productId) {
+        // DB에서 상품 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
         
         // Async increment view count
+        // 조회수 증가 (Redis에 비동기 저장)
         productTrendingRepository.incrementViewCount(productId);
 
+        // DTO로 변환하여 반환
         return ProductDetailResponse.from(product);
     }
     

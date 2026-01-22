@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: >-
+      jdbc:mysql://cherry.cdy8yc6s0cba.ap-northeast-2.rds.amazonaws.com:3306/cherry
+      ?useSSL=false
+      &serverTimezone=Asia/Seoul
+      &characterEncoding=UTF-8
+    username: cherry_app
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+
+  # Redis Configuration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+# CORS Configuration (for production deployment)
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://cherriy.com,https://www.cherriy.com}
