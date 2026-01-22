@@ -7,6 +7,7 @@ import com.cherry.server.product.dto.ProductSummaryResponse;
 import com.cherry.server.product.repository.ProductRepository;
 import com.cherry.server.product.repository.ProductTrendingRepository;
 import com.cherry.server.wish.repository.ProductLikeRepository;
+import com.cherry.server.wish.repository.ProductLikeRepository.ProductLikeCount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -54,8 +55,16 @@ public class ProductService {
         Set<Long> likedProductIds = userId == null || productIds.isEmpty()
                 ? Collections.emptySet()
                 : new HashSet<>(productLikeRepository.findLikedProductIds(userId, productIds));
+        Map<Long, Long> likeCountMap = productIds.isEmpty()
+                ? Collections.emptyMap()
+                : productLikeRepository.countByProductIds(productIds).stream()
+                .collect(Collectors.toMap(ProductLikeCount::getProductId, ProductLikeCount::getLikeCount));
         List<ProductSummaryResponse> items = products.stream()
-                .map(product -> ProductSummaryResponse.from(product, likedProductIds.contains(product.getId())))
+                .map(product -> ProductSummaryResponse.from(
+                        product,
+                        likedProductIds.contains(product.getId()),
+                        likeCountMap.getOrDefault(product.getId(), 0L)
+                ))
                 .toList();
         
         String nextCursor = null;
@@ -79,7 +88,8 @@ public class ProductService {
 
         // DTO로 변환하여 반환
         boolean isLiked = userId != null && productLikeRepository.existsByUserIdAndProductId(userId, productId);
-        return ProductDetailResponse.from(product, isLiked);
+        long likeCount = productLikeRepository.countByProductId(productId);
+        return ProductDetailResponse.from(product, isLiked, likeCount);
     }
     
     public ProductListResponse getTrending(Long userId) {
@@ -99,10 +109,16 @@ public class ProductService {
         Set<Long> likedProductIds = userId == null
                 ? Collections.emptySet()
                 : new HashSet<>(productLikeRepository.findLikedProductIds(userId, topIds));
+        Map<Long, Long> likeCountMap = productLikeRepository.countByProductIds(topIds).stream()
+                .collect(Collectors.toMap(ProductLikeCount::getProductId, ProductLikeCount::getLikeCount));
         List<ProductSummaryResponse> items = topIds.stream()
                 .filter(productMap::containsKey)
                 .map(productMap::get)
-                .map(product -> ProductSummaryResponse.from(product, likedProductIds.contains(product.getId())))
+                .map(product -> ProductSummaryResponse.from(
+                        product,
+                        likedProductIds.contains(product.getId()),
+                        likeCountMap.getOrDefault(product.getId(), 0L)
+                ))
                 .toList();
 
         return new ProductListResponse(items, null);

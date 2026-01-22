@@ -8,6 +8,7 @@ import com.cherry.server.user.domain.User;
 import com.cherry.server.user.repository.UserRepository;
 import com.cherry.server.wish.domain.ProductLike;
 import com.cherry.server.wish.repository.ProductLikeRepository;
+import com.cherry.server.wish.repository.ProductLikeRepository.ProductLikeCount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -18,7 +19,10 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -70,8 +74,20 @@ public class WishService {
                 cursorId,
                 PageRequest.of(0, limit)
         );
-        List<ProductSummaryResponse> items = likes.getContent().stream()
-                .map(like -> ProductSummaryResponse.from(like.getProduct(), true))
+        List<ProductLike> likeList = likes.getContent();
+        List<Long> productIds = likeList.stream()
+                .map(like -> like.getProduct().getId())
+                .toList();
+        Map<Long, Long> likeCountMap = productIds.isEmpty()
+                ? Collections.emptyMap()
+                : productLikeRepository.countByProductIds(productIds).stream()
+                .collect(Collectors.toMap(ProductLikeCount::getProductId, ProductLikeCount::getLikeCount));
+        List<ProductSummaryResponse> items = likeList.stream()
+                .map(like -> ProductSummaryResponse.from(
+                        like.getProduct(),
+                        true,
+                        likeCountMap.getOrDefault(like.getProduct().getId(), 0L)
+                ))
                 .toList();
 
         String nextCursor = null;

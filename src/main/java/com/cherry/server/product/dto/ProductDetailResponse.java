@@ -19,16 +19,21 @@ public record ProductDetailResponse(
         String description,
         SellerResponse seller,
         LocalDateTime createdAt,
-        boolean isLiked
+        boolean isLiked,
+        long likeCount
 ) {
     @Builder
     public record SellerResponse(Long id, String nickname) {}
 
     public static ProductDetailResponse from(Product product) {
-        return from(product, false);
+        return from(product, false, 0L);
     }
 
     public static ProductDetailResponse from(Product product, boolean isLiked) {
+        return from(product, isLiked, 0L);
+    }
+
+    public static ProductDetailResponse from(Product product, boolean isLiked, long likeCount) {
         return ProductDetailResponse.builder()
                 .id(product.getId())
                 .title(product.getTitle())
@@ -40,6 +45,7 @@ public record ProductDetailResponse(
                 .seller(new SellerResponse(product.getSeller().getId(), product.getSeller().getNickname()))
                 .createdAt(product.getCreatedAt())
                 .isLiked(isLiked)
+                .likeCount(likeCount)
                 .build();
     }
 }

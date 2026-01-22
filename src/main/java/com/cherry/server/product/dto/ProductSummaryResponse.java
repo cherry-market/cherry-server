@@ -16,13 +16,18 @@ public record ProductSummaryResponse(
         TradeType tradeType,
         String thumbnailUrl, // TODO: Image implementation
         LocalDateTime createdAt,
-        boolean isLiked
+        boolean isLiked,
+        long likeCount
 ) {
     public static ProductSummaryResponse from(Product product) {
-        return from(product, false);
+        return from(product, false, 0L);
     }
 
     public static ProductSummaryResponse from(Product product, boolean isLiked) {
+        return from(product, isLiked, 0L);
+    }
+
+    public static ProductSummaryResponse from(Product product, boolean isLiked, long likeCount) {
         return ProductSummaryResponse.builder()
                 .id(product.getId())
                 .title(product.getTitle())
@@ -32,6 +37,7 @@ public record ProductSummaryResponse(
                 .thumbnailUrl("https://via.placeholder.com/150") // Dummy for P0
                 .createdAt(product.getCreatedAt())
                 .isLiked(isLiked)
+                .likeCount(likeCount)
                 .build();
     }
 }
