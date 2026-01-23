@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @Table(name = "products")
@@ -35,6 +38,12 @@ public class Product extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     private TradeType tradeType;
+
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    private List<ProductImage> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    private List<ProductTag> productTags = new ArrayList<>();
 
     @Builder
     public Product(User seller, String title, String description, int price, ProductStatus status, TradeType tradeType) {
