@@ -17,6 +17,7 @@ public record ProductDetailResponse(
         ProductStatus status,
         TradeType tradeType,
         List<String> imageUrls, // Dummy
+        CategoryResponse category,
         String description,
         SellerResponse seller,
         LocalDateTime createdAt,
@@ -46,6 +47,7 @@ public record ProductDetailResponse(
                         .sorted(Comparator.comparingInt(img -> img.getImageOrder()))
                         .map(img -> img.getImageUrl())
                         .toList())
+                .category(CategoryResponse.from(product.getCategory()))
                 .description(product.getDescription())
                 .seller(new SellerResponse(product.getSeller().getId(), product.getSeller().getNickname()))
                 .createdAt(product.getCreatedAt())

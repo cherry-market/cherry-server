@@ -3,6 +3,7 @@ package com.cherry.server.product.service;
 import com.cherry.server.product.domain.Product;
 import com.cherry.server.product.dto.ProductDetailResponse;
 import com.cherry.server.product.dto.ProductListResponse;
+import com.cherry.server.product.dto.ProductSearchCondition;
 import com.cherry.server.product.dto.ProductSummaryResponse;
 import com.cherry.server.product.repository.ProductRepository;
 import com.cherry.server.product.repository.ProductTrendingRepository;
@@ -32,7 +33,7 @@ public class ProductService {
     private final ProductTrendingRepository productTrendingRepository;
     private final ProductLikeRepository productLikeRepository;
 
-    public ProductListResponse getProducts(String cursor, int limit, Long userId) {
+    public ProductListResponse getProducts(String cursor, int limit, Long userId, ProductSearchCondition condition) {
         LocalDateTime cursorCreatedAt = null;
         Long cursorId = null;
 
@@ -47,7 +48,16 @@ public class ProductService {
             }
         }
 
-        Slice<Product> slice = productRepository.findAllByCursor(cursorCreatedAt, cursorId, PageRequest.of(0, limit));
+        Slice<Product> slice = productRepository.findAllByCursorWithFilters(
+                cursorCreatedAt,
+                cursorId,
+                condition.status(),
+                condition.categoryId(),
+                condition.minPrice(),
+                condition.maxPrice(),
+                condition.tradeType(),
+                PageRequest.of(0, limit)
+        );
         List<Product> products = slice.getContent();
         List<Long> productIds = products.stream()
                 .map(Product::getId)
