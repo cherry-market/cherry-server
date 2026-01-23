@@ -17,16 +17,23 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private static final long ACCESS_TOKEN_VALIDITY_MS = 60 * 60 * 1000L;
-    private static final int MIN_SECRET_LENGTH = 32;
+    private static final int MIN_SECRET_BYTES = 32;
 
-    @Value("${jwt.secret:cherry-dev-secret-please-change-32bytes}")
+    @Value("${jwt.secret}")
     private String secret;
 
     private SecretKey secretKey;
 
     @PostConstruct
     void init() {
-        secretKey = Keys.hmacShaKeyFor(padSecret(secret).getBytes(StandardCharsets.UTF_8));
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT secret is missing. Set `JWT_SECRET` (or `jwt.secret`).");
+        }
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException("JWT secret is too short. Must be at least 32 bytes.");
+        }
+        secretKey = Keys.hmacShaKeyFor(secretBytes);
     }
 
     public String generateAccessToken(Long userId, String email) {
@@ -70,20 +77,5 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-    }
-
-    private String padSecret(String value) {
-        if (value == null) {
-            return "cherry-dev-secret-please-change-32bytes";
-        }
-        String secretValue = value.trim();
-        if (secretValue.length() >= MIN_SECRET_LENGTH) {
-            return secretValue;
-        }
-        StringBuilder padded = new StringBuilder(secretValue);
-        while (padded.length() < MIN_SECRET_LENGTH) {
-            padded.append('0');
-        }
-        return padded.toString();
     }
 }

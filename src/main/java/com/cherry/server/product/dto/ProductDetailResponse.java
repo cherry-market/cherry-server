@@ -17,6 +17,8 @@ public record ProductDetailResponse(
         ProductStatus status,
         TradeType tradeType,
         List<String> imageUrls, // Dummy
+        CategoryResponse category,
+        List<String> tags,
         String description,
         SellerResponse seller,
         LocalDateTime createdAt,
@@ -44,7 +46,11 @@ public record ProductDetailResponse(
                 .imageUrls(product.getImages().stream()
                         .filter(img -> !img.isThumbnail()) // 썸네일 제외
                         .sorted(Comparator.comparingInt(img -> img.getImageOrder()))
-                        .map(img -> img.getImageUrl())
+                .map(img -> img.getImageUrl())
+                .toList())
+                .category(CategoryResponse.from(product.getCategory()))
+                .tags(product.getProductTags().stream()
+                        .map(pt -> pt.getTag().getName())
                         .toList())
                 .description(product.getDescription())
                 .seller(new SellerResponse(product.getSeller().getId(), product.getSeller().getNickname()))

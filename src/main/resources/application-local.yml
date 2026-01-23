@@ -20,3 +20,6 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+jwt:
+  secret: cherry-local-dev-secret-please-change-32bytes

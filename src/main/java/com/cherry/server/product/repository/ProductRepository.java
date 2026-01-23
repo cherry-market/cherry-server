@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 
-public interface ProductRepository extends JpaRepository<Product, Long> {
+public interface ProductRepository extends JpaRepository<Product, Long>, ProductRepositoryCustom {
 
     // Cursor Pagination: (createdAt < lastCreatedAt) OR (createdAt == lastCreatedAt AND id < lastId)
     // Ordered by createdAt DESC, id DESC
@@ -20,4 +20,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Slice<Product> findAllByCursor(@Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
                                    @Param("cursorId") Long cursorId,
                                    Pageable pageable);
+
+    @Query("SELECT p FROM Product p " +
+           "LEFT JOIN FETCH p.seller s " +
+           "LEFT JOIN FETCH p.category c " +
+           "WHERE p.id IN :ids")
+    java.util.List<Product> findAllByIdInWithSellerAndCategory(@Param("ids") java.util.List<Long> ids);
 }

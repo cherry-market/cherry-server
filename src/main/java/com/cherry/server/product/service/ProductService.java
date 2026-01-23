@@ -3,7 +3,10 @@ package com.cherry.server.product.service;
 import com.cherry.server.product.domain.Product;
 import com.cherry.server.product.dto.ProductDetailResponse;
 import com.cherry.server.product.dto.ProductListResponse;
+import com.cherry.server.product.dto.ProductSearchCondition;
+import com.cherry.server.product.dto.ProductSortBy;
 import com.cherry.server.product.dto.ProductSummaryResponse;
+import com.cherry.server.product.repository.ProductTagRepository;
 import com.cherry.server.product.repository.ProductRepository;
 import com.cherry.server.product.repository.ProductTrendingRepository;
 import com.cherry.server.wish.repository.ProductLikeRepository;
@@ -31,27 +34,56 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductTrendingRepository productTrendingRepository;
     private final ProductLikeRepository productLikeRepository;
+    private final ProductTagRepository productTagRepository;
 
-    public ProductListResponse getProducts(String cursor, int limit, Long userId) {
+    public ProductListResponse getProducts(String cursor, int limit, Long userId, ProductSearchCondition condition, ProductSortBy sortBy) {
         LocalDateTime cursorCreatedAt = null;
+        Integer cursorPrice = null;
         Long cursorId = null;
 
         if (cursor != null) {
-            // Decoded dummy logic for P0: "timestamp_id"
             try {
-                String[] parts = cursor.split("_");
-                cursorCreatedAt = LocalDateTime.parse(parts[0]);
-                cursorId = Long.parseLong(parts[1]);
+                int underscoreIndex = cursor.lastIndexOf('_');
+                if (underscoreIndex <= 0 || underscoreIndex == cursor.length() - 1) {
+                    throw new IllegalArgumentException("Invalid cursor");
+                }
+                String sortValue = cursor.substring(0, underscoreIndex);
+                Long parsedCursorId = Long.parseLong(cursor.substring(underscoreIndex + 1));
+                if (sortBy == ProductSortBy.LATEST) {
+                    cursorCreatedAt = LocalDateTime.parse(sortValue);
+                } else {
+                    cursorPrice = Integer.parseInt(sortValue);
+                }
+                cursorId = parsedCursorId;
             } catch (Exception e) {
                 // Invalid cursor, treat as first page
+                cursorCreatedAt = null;
+                cursorPrice = null;
+                cursorId = null;
             }
         }
 
-        Slice<Product> slice = productRepository.findAllByCursor(cursorCreatedAt, cursorId, PageRequest.of(0, limit));
+        Slice<Product> slice = productRepository.findSliceByFilters(
+                condition,
+                sortBy,
+                cursorCreatedAt,
+                cursorPrice,
+                cursorId,
+                PageRequest.of(0, limit)
+        );
         List<Product> products = slice.getContent();
         List<Long> productIds = products.stream()
                 .map(Product::getId)
                 .toList();
+
+        Map<Long, List<String>> tagsMap = productIds.isEmpty()
+                ? Collections.emptyMap()
+                : productTagRepository.findAllByProductIdInWithTag(productIds).stream()
+                .collect(Collectors.groupingBy(
+                        pt -> pt.getProduct().getId(),
+                        Collectors.mapping(pt -> pt.getTag().getName(), Collectors.toList())
+                ));
+
         Set<Long> likedProductIds = userId == null || productIds.isEmpty()
                 ? Collections.emptySet()
                 : new HashSet<>(productLikeRepository.findLikedProductIds(userId, productIds));
@@ -63,14 +95,19 @@ public class ProductService {
                 .map(product -> ProductSummaryResponse.from(
                         product,
                         likedProductIds.contains(product.getId()),
-                        likeCountMap.getOrDefault(product.getId(), 0L)
+                        likeCountMap.getOrDefault(product.getId(), 0L),
+                        tagsMap.getOrDefault(product.getId(), List.of())
                 ))
                 .toList();
         
         String nextCursor = null;
         if (slice.hasNext()) {
             Product last = slice.getContent().get(slice.getContent().size() - 1);
-            nextCursor = last.getCreatedAt().toString() + "_" + last.getId();
+            String nextSortValue = switch (sortBy) {
+                case LATEST -> last.getCreatedAt().toString();
+                case LOW_PRICE, HIGH_PRICE -> Integer.toString(last.getPrice());
+            };
+            nextCursor = nextSortValue + "_" + last.getId();
         }
 
         return new ProductListResponse(items, nextCursor);
@@ -99,7 +136,7 @@ public class ProductService {
             return new ProductListResponse(Collections.emptyList(), null);
         }
 
-        List<Product> products = productRepository.findAllById(topIds);
+        List<Product> products = productRepository.findAllByIdInWithSellerAndCategory(topIds);
         
         // Map for O(1) Access
         Map<Long, Product> productMap = products.stream()
