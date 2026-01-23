@@ -2,6 +2,7 @@ package com.cherry.server.product.service;
 
 import com.cherry.server.product.domain.Product;
 import com.cherry.server.product.dto.ProductDetailResponse;
+import com.cherry.server.product.dto.ProductListRequest;
 import com.cherry.server.product.dto.ProductListResponse;
 import com.cherry.server.product.dto.ProductSummaryResponse;
 import com.cherry.server.product.repository.ProductRepository;
@@ -74,6 +75,10 @@ public class ProductService {
         }
 
         return new ProductListResponse(items, nextCursor);
+    }
+
+    public ProductListResponse getProducts(String cursor, int limit, Long userId, ProductListRequest request) {
+        return getProducts(cursor, limit, userId);
     }
 
     @Transactional

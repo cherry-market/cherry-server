@@ -1,7 +1,11 @@
 package com.cherry.server.product.controller;
 
+import com.cherry.server.product.domain.ProductStatus;
+import com.cherry.server.product.domain.TradeType;
 import com.cherry.server.product.dto.ProductDetailResponse;
+import com.cherry.server.product.dto.ProductListRequest;
 import com.cherry.server.product.dto.ProductListResponse;
+import com.cherry.server.product.dto.ProductSortBy;
 import com.cherry.server.product.service.ProductService;
 import com.cherry.server.security.UserPrincipal;
 import jakarta.validation.constraints.Max;
@@ -24,10 +28,24 @@ public class ProductController {
     public ResponseEntity<ProductListResponse> getProducts(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit,
+            @RequestParam(required = false) ProductStatus status,
+            @RequestParam(required = false) String categoryCode,
+            @RequestParam(required = false) Integer minPrice,
+            @RequestParam(required = false) Integer maxPrice,
+            @RequestParam(required = false) TradeType tradeType,
+            @RequestParam(required = false) ProductSortBy sortBy
     ) {
         Long userId = principal == null ? null : principal.id();
-        return ResponseEntity.ok(productService.getProducts(cursor, limit, userId));
+        ProductListRequest request = ProductListRequest.builder()
+                .status(status)
+                .categoryCode(categoryCode)
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .tradeType(tradeType)
+                .sortBy(sortBy)
+                .build();
+        return ResponseEntity.ok(productService.getProducts(cursor, limit, userId, request));
     }
 
     @GetMapping("/{productId}")
