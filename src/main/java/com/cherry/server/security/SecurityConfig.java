@@ -33,6 +33,8 @@ public class SecurityConfig {
         MvcRequestMatcher.Builder mvc = new MvcRequestMatcher.Builder(introspector);
         MvcRequestMatcher optionsMatcher = mvc.pattern("/**");
         optionsMatcher.setMethod(HttpMethod.OPTIONS);
+        MvcRequestMatcher aiMatcher = mvc.pattern("/ai/**");
+        aiMatcher.setMethod(HttpMethod.POST);
         MvcRequestMatcher healthMatcher = mvc.pattern("/health");
         MvcRequestMatcher likeStatusMatcher = mvc.pattern("/products/{productId}/like-status");
         likeStatusMatcher.setMethod(HttpMethod.GET);
@@ -51,6 +53,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(optionsMatcher).permitAll()
+                        .requestMatchers(aiMatcher).permitAll()
                         .requestMatchers(healthMatcher).permitAll()
                         .requestMatchers(likeStatusMatcher).authenticated()
                         .requestMatchers(productsMatcher).permitAll()
