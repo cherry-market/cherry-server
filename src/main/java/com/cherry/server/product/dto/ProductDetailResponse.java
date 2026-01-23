@@ -6,6 +6,7 @@ import com.cherry.server.product.domain.TradeType;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Builder
@@ -18,22 +19,38 @@ public record ProductDetailResponse(
         List<String> imageUrls, // Dummy
         String description,
         SellerResponse seller,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean isLiked,
+        long likeCount
 ) {
     @Builder
     public record SellerResponse(Long id, String nickname) {}
 
     public static ProductDetailResponse from(Product product) {
+        return from(product, false, 0L);
+    }
+
+    public static ProductDetailResponse from(Product product, boolean isLiked) {
+        return from(product, isLiked, 0L);
+    }
+
+    public static ProductDetailResponse from(Product product, boolean isLiked, long likeCount) {
         return ProductDetailResponse.builder()
                 .id(product.getId())
                 .title(product.getTitle())
                 .price(product.getPrice())
                 .status(product.getStatus())
                 .tradeType(product.getTradeType())
-                .imageUrls(List.of("https://via.placeholder.com/400")) // Dummy
+                .imageUrls(product.getImages().stream()
+                        .filter(img -> !img.isThumbnail()) // 썸네일 제외
+                        .sorted(Comparator.comparingInt(img -> img.getImageOrder()))
+                        .map(img -> img.getImageUrl())
+                        .toList())
                 .description(product.getDescription())
                 .seller(new SellerResponse(product.getSeller().getId(), product.getSeller().getNickname()))
                 .createdAt(product.getCreatedAt())
+                .isLiked(isLiked)
+                .likeCount(likeCount)
                 .build();
     }
 }
