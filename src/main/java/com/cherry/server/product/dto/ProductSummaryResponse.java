@@ -34,7 +34,11 @@ public record ProductSummaryResponse(
                 .price(product.getPrice())
                 .status(product.getStatus())
                 .tradeType(product.getTradeType())
-                .thumbnailUrl("https://via.placeholder.com/150") // Dummy for P0
+                .thumbnailUrl(product.getImages().stream()
+                        .filter(img -> img.isThumbnail())
+                        .findFirst()
+                        .map(img -> img.getImageUrl())
+                        .orElse(null))
                 .createdAt(product.getCreatedAt())
                 .isLiked(isLiked)
                 .likeCount(likeCount)

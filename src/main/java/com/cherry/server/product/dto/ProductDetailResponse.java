@@ -6,6 +6,7 @@ import com.cherry.server.product.domain.TradeType;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Builder
@@ -40,7 +41,11 @@ public record ProductDetailResponse(
                 .price(product.getPrice())
                 .status(product.getStatus())
                 .tradeType(product.getTradeType())
-                .imageUrls(List.of("https://via.placeholder.com/400")) // Dummy
+                .imageUrls(product.getImages().stream()
+                        .filter(img -> !img.isThumbnail()) // 썸네일 제외
+                        .sorted(Comparator.comparingInt(img -> img.getImageOrder()))
+                        .map(img -> img.getImageUrl())
+                        .toList())
                 .description(product.getDescription())
                 .seller(new SellerResponse(product.getSeller().getId(), product.getSeller().getNickname()))
                 .createdAt(product.getCreatedAt())
