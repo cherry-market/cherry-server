@@ -109,7 +109,7 @@ public class ProductService {
             return new ProductListResponse(Collections.emptyList(), null);
         }
 
-        List<Product> products = productRepository.findAllById(topIds);
+        List<Product> products = productRepository.findAllByIdInWithSellerAndCategory(topIds);
         
         // Map for O(1) Access
         Map<Long, Product> productMap = products.stream()

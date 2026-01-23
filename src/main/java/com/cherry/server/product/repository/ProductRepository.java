@@ -24,6 +24,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                    Pageable pageable);
 
     @Query("SELECT p FROM Product p " +
+           "LEFT JOIN FETCH p.seller s " +
            "LEFT JOIN FETCH p.category c " +
            "WHERE (:status IS NULL OR p.status = :status) " +
            "AND (:tradeType IS NULL OR p.tradeType = :tradeType) " +
@@ -43,4 +44,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("tradeType") TradeType tradeType,
             Pageable pageable
     );
+
+    @Query("SELECT p FROM Product p " +
+           "LEFT JOIN FETCH p.seller s " +
+           "LEFT JOIN FETCH p.category c " +
+           "WHERE p.id IN :ids")
+    java.util.List<Product> findAllByIdInWithSellerAndCategory(@Param("ids") java.util.List<Long> ids);
 }

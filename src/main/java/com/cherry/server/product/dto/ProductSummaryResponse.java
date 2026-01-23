@@ -16,6 +16,7 @@ public record ProductSummaryResponse(
         TradeType tradeType,
         String thumbnailUrl, // TODO: Image implementation
         CategoryResponse category,
+        ProductDetailResponse.SellerResponse seller,
         LocalDateTime createdAt,
         boolean isLiked,
         long likeCount
@@ -41,6 +42,10 @@ public record ProductSummaryResponse(
                         .map(img -> img.getImageUrl())
                         .orElse(null))
                 .category(CategoryResponse.from(product.getCategory()))
+                .seller(new ProductDetailResponse.SellerResponse(
+                        product.getSeller().getId(),
+                        product.getSeller().getNickname()
+                ))
                 .createdAt(product.getCreatedAt())
                 .isLiked(isLiked)
                 .likeCount(likeCount)
