@@ -46,12 +46,11 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DB_HOST,DB_NAME,DB_USERNAME,DB_PASSWORD,GEMINI_API_KEY
+          envs: DB_HOST,DB_NAME,DB_USERNAME,DB_PASSWORD
           script: |
             set -e
             cd /home/ec2-user/cherry
@@ -66,7 +65,6 @@ jobs:
             SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST}:3306/${DB_NAME}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
             SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
             SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-            GEMINI_API_KEY=${GEMINI_API_KEY}
             EOF
             
             # Secure .env file permissions
