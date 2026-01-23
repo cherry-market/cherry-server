@@ -25,7 +25,7 @@ public class SeedRunner implements CommandLineRunner {
             SeedDataGenerator generator,
             @Value("${seed.count:10000}") int count,
             @Value("${seed.seed:42}") long seed,
-            @Value("${seed.include-images:true}") boolean includeImages,
+            @Value("${seed.include-images:false}") boolean includeImages,
             @Value("${seed.truncate:false}") boolean truncate,
             @Value("${seed.confirm:}") String confirm
     ) {

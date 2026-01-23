@@ -13,6 +13,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class SeedDataGenerator {
 
+    private static final String SVG_PLACEHOLDER_DATA_URL =
+            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><rect width='100%25' height='100%25' fill='%23f5f5f5'/></svg>";
+
     public record SeedConfig(int productCount, long seed, boolean includeImages) {}
 
     public record GeneratedData(
@@ -104,7 +107,7 @@ public class SeedDataGenerator {
             if (config.includeImages()) {
                 productImages.add(new ProductImageRow(
                         productId,
-                        "https://example.invalid/seed/thumb.png?productId=" + productId,
+                        SVG_PLACEHOLDER_DATA_URL,
                         0,
                         true,
                         createdAt,
@@ -116,7 +119,7 @@ public class SeedDataGenerator {
                     for (int j = 0; j < 3; j++) {
                         productImages.add(new ProductImageRow(
                                 productId,
-                                "https://example.invalid/seed/album.png?productId=" + productId + "&i=" + j,
+                                SVG_PLACEHOLDER_DATA_URL,
                                 j,
                                 false,
                                 createdAt,
