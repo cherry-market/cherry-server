@@ -3,6 +3,7 @@ package com.cherry.server.product.dto;
 import com.cherry.server.product.domain.Product;
 import com.cherry.server.product.domain.ProductStatus;
 import com.cherry.server.product.domain.TradeType;
+import java.util.List;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -18,18 +19,23 @@ public record ProductSummaryResponse(
         CategoryResponse category,
         ProductDetailResponse.SellerResponse seller,
         LocalDateTime createdAt,
+        List<String> tags,
         boolean isLiked,
         long likeCount
 ) {
     public static ProductSummaryResponse from(Product product) {
-        return from(product, false, 0L);
+        return from(product, false, 0L, List.of());
     }
 
     public static ProductSummaryResponse from(Product product, boolean isLiked) {
-        return from(product, isLiked, 0L);
+        return from(product, isLiked, 0L, List.of());
     }
 
     public static ProductSummaryResponse from(Product product, boolean isLiked, long likeCount) {
+        return from(product, isLiked, likeCount, List.of());
+    }
+
+    public static ProductSummaryResponse from(Product product, boolean isLiked, long likeCount, List<String> tags) {
         return ProductSummaryResponse.builder()
                 .id(product.getId())
                 .title(product.getTitle())
@@ -47,6 +53,7 @@ public record ProductSummaryResponse(
                         product.getSeller().getNickname()
                 ))
                 .createdAt(product.getCreatedAt())
+                .tags(tags)
                 .isLiked(isLiked)
                 .likeCount(likeCount)
                 .build();

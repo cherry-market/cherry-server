@@ -3,6 +3,7 @@ package com.cherry.server.product.controller;
 import com.cherry.server.product.dto.ProductDetailResponse;
 import com.cherry.server.product.dto.ProductListResponse;
 import com.cherry.server.product.dto.ProductSearchCondition;
+import com.cherry.server.product.dto.ProductSortBy;
 import com.cherry.server.product.domain.ProductStatus;
 import com.cherry.server.product.domain.TradeType;
 import com.cherry.server.product.service.ProductService;
@@ -30,10 +31,11 @@ public class ProductController {
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) ProductStatus status,
-            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String categoryCode,
             @RequestParam(required = false) Integer minPrice,
             @RequestParam(required = false) Integer maxPrice,
             @RequestParam(required = false) TradeType tradeType,
+            @RequestParam(defaultValue = "LATEST") ProductSortBy sortBy,
             @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit
     ) {
         if (minPrice != null && minPrice < 0) {
@@ -46,8 +48,8 @@ public class ProductController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "minPrice must be <= maxPrice");
         }
         Long userId = principal == null ? null : principal.id();
-        ProductSearchCondition condition = new ProductSearchCondition(status, categoryId, minPrice, maxPrice, tradeType);
-        return ResponseEntity.ok(productService.getProducts(cursor, limit, userId, condition));
+        ProductSearchCondition condition = new ProductSearchCondition(status, categoryCode, minPrice, maxPrice, tradeType, sortBy);
+        return ResponseEntity.ok(productService.getProducts(cursor, limit, userId, condition, sortBy));
     }
 
     @GetMapping("/{productId}")

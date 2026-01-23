@@ -5,9 +5,10 @@ import com.cherry.server.product.domain.TradeType;
 
 public record ProductSearchCondition(
         ProductStatus status,
-        Long categoryId,
+        String categoryCode,
         Integer minPrice,
         Integer maxPrice,
-        TradeType tradeType
+        TradeType tradeType,
+        ProductSortBy sortBy
 ) {
 }
