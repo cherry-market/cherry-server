@@ -11,9 +11,12 @@ import com.cherry.server.product.repository.ProductRepository;
 import com.cherry.server.product.repository.ProductTrendingRepository;
 import com.cherry.server.wish.repository.ProductLikeRepository;
 import com.cherry.server.wish.repository.ProductLikeRepository.ProductLikeCount;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +26,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -35,8 +40,22 @@ public class ProductService {
     private final ProductTrendingRepository productTrendingRepository;
     private final ProductLikeRepository productLikeRepository;
     private final ProductTagRepository productTagRepository;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
+
+    private static final String PRODUCT_LIST_CACHE_PREFIX = "products:list";
+    private static final long PRODUCT_LIST_CACHE_TTL_SECONDS = 300;
 
     public ProductListResponse getProducts(String cursor, int limit, Long userId, ProductSearchCondition condition, ProductSortBy sortBy) {
+        String cacheKey = buildProductsCacheKey(cursor, condition, sortBy, limit);
+        ProductListResponse cached = getCachedProductList(cacheKey);
+        if (cached != null) {
+            if (userId == null) {
+                return cached;
+            }
+            return applyLikedFlags(cached, userId);
+        }
+
         LocalDateTime cursorCreatedAt = null;
         Integer cursorPrice = null;
         Long cursorId = null;
@@ -99,6 +118,12 @@ public class ProductService {
                         tagsMap.getOrDefault(product.getId(), List.of())
                 ))
                 .toList();
+
+        List<ProductSummaryResponse> cacheItems = userId == null
+                ? items
+                : items.stream()
+                .map(item -> withIsLiked(item, false))
+                .toList();
         
         String nextCursor = null;
         if (slice.hasNext()) {
@@ -110,7 +135,9 @@ public class ProductService {
             nextCursor = nextSortValue + "_" + last.getId();
         }
 
-        return new ProductListResponse(items, nextCursor);
+        ProductListResponse response = new ProductListResponse(items, nextCursor);
+        cacheProductList(cacheKey, new ProductListResponse(cacheItems, nextCursor));
+        return response;
     }
 
     @Transactional
@@ -159,5 +186,80 @@ public class ProductService {
                 .toList();
 
         return new ProductListResponse(items, null);
+    }
+
+    private String buildProductsCacheKey(String cursor, ProductSearchCondition condition, ProductSortBy sortBy, int limit) {
+        String filterKey = String.join("|",
+                "status=" + valueOf(condition.status()),
+                "category=" + valueOf(condition.categoryCode()),
+                "minPrice=" + valueOf(condition.minPrice()),
+                "maxPrice=" + valueOf(condition.maxPrice()),
+                "tradeType=" + valueOf(condition.tradeType())
+        );
+        return String.join(":",
+                PRODUCT_LIST_CACHE_PREFIX,
+                valueOf(cursor),
+                filterKey,
+                valueOf(sortBy),
+                Integer.toString(limit)
+        );
+    }
+
+    private ProductListResponse getCachedProductList(String cacheKey) {
+        try {
+            String cachedValue = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedValue == null) {
+                return null;
+            }
+            return objectMapper.readValue(cachedValue, ProductListResponse.class);
+        } catch (Exception e) {
+            log.debug("Failed to read product list cache", e);
+            return null;
+        }
+    }
+
+    private void cacheProductList(String cacheKey, ProductListResponse response) {
+        try {
+            String payload = objectMapper.writeValueAsString(response);
+            redisTemplate.opsForValue().set(cacheKey, payload, PRODUCT_LIST_CACHE_TTL_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.debug("Failed to write product list cache", e);
+        }
+    }
+
+    private ProductListResponse applyLikedFlags(ProductListResponse cached, Long userId) {
+        List<ProductSummaryResponse> items = cached.items();
+        if (items == null || items.isEmpty()) {
+            return cached;
+        }
+        List<Long> productIds = items.stream()
+                .map(ProductSummaryResponse::id)
+                .toList();
+        Set<Long> likedProductIds = new HashSet<>(productLikeRepository.findLikedProductIds(userId, productIds));
+        List<ProductSummaryResponse> updatedItems = items.stream()
+                .map(item -> withIsLiked(item, likedProductIds.contains(item.id())))
+                .toList();
+        return new ProductListResponse(updatedItems, cached.nextCursor());
+    }
+
+    private ProductSummaryResponse withIsLiked(ProductSummaryResponse item, boolean isLiked) {
+        return ProductSummaryResponse.builder()
+                .id(item.id())
+                .title(item.title())
+                .price(item.price())
+                .status(item.status())
+                .tradeType(item.tradeType())
+                .thumbnailUrl(item.thumbnailUrl())
+                .category(item.category())
+                .seller(item.seller())
+                .createdAt(item.createdAt())
+                .tags(item.tags())
+                .isLiked(isLiked)
+                .likeCount(item.likeCount())
+                .build();
+    }
+
+    private String valueOf(Object value) {
+        return value == null ? "null" : value.toString();
     }
 }
