@@ -9,6 +9,11 @@ spring:
     username: cherry_app
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 3000
+      max-lifetime: 1800000
 
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
