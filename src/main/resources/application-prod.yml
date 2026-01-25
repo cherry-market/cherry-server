@@ -23,7 +23,7 @@ spring:
 
 # CORS Configuration (for production deployment)
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://cherriy.com,https://www.cherriy.com}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://cheryi.com,https://www.cheryi.com}
 
 jwt:
   secret: ${JWT_SECRET}
