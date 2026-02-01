@@ -37,8 +37,14 @@ public class ProductImage extends BaseTimeEntity {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(name = "image_url", nullable = false, length = 500)
+    @Column(name = "image_url", length = 500)
     private String imageUrl;
+
+    @Column(name = "original_url", length = 500)
+    private String originalUrl;
+
+    @Column(name = "thumbnail_url", length = 500)
+    private String thumbnailUrl;
 
     @Column(name = "image_order", nullable = false)
     private int imageOrder;
@@ -47,9 +53,25 @@ public class ProductImage extends BaseTimeEntity {
     private boolean isThumbnail;
 
     @Builder
-    public ProductImage(Product product, String imageUrl, int imageOrder, boolean isThumbnail) {
+    public ProductImage(
+            Product product,
+            String imageUrl,
+            String originalUrl,
+            String thumbnailUrl,
+            int imageOrder,
+            boolean isThumbnail
+    ) {
         this.product = product;
         this.imageUrl = imageUrl;
+        this.originalUrl = originalUrl;
+        this.thumbnailUrl = thumbnailUrl;
+        this.imageOrder = imageOrder;
+        this.isThumbnail = isThumbnail;
+    }
+
+    public void updateProcessedImage(String imageUrl, String thumbnailUrl, int imageOrder, boolean isThumbnail) {
+        this.imageUrl = imageUrl;
+        this.thumbnailUrl = thumbnailUrl;
         this.imageOrder = imageOrder;
         this.isThumbnail = isThumbnail;
     }

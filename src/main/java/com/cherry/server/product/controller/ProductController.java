@@ -1,5 +1,7 @@
 package com.cherry.server.product.controller;
 
+import com.cherry.server.product.dto.ProductCreateRequest;
+import com.cherry.server.product.dto.ProductCreateResponse;
 import com.cherry.server.product.dto.ProductDetailResponse;
 import com.cherry.server.product.dto.ProductListResponse;
 import com.cherry.server.product.dto.ProductSearchCondition;
@@ -67,6 +69,18 @@ public class ProductController {
     ) {
         Long userId = principal == null ? null : principal.id();
         return ResponseEntity.ok(productService.getTrending(userId));
+    }
+
+    @PostMapping
+    public ResponseEntity<ProductCreateResponse> createProduct(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Validated @RequestBody ProductCreateRequest request
+    ) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+        ProductCreateResponse response = productService.createProduct(principal.id(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
     // P0: Optional View Increment API (if explicit call needed)

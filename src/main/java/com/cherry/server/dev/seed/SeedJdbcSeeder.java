@@ -140,11 +140,13 @@ public class SeedJdbcSeeder {
             SeedDataGenerator.ProductImageRow row = images.get(i);
             long id = productImageIdStart + i;
             jdbcTemplate.update(
-                    "INSERT INTO product_images (id, product_id, image_url, image_order, is_thumbnail, created_at, updated_at) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO product_images (id, product_id, image_url, original_url, thumbnail_url, image_order, is_thumbnail, created_at, updated_at) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     id,
                     productIdStart + (row.productId() - 1),
                     row.imageUrl(),
+                    row.originalUrl(),
+                    row.thumbnailUrl(),
                     row.imageOrder(),
                     row.isThumbnail(),
                     Timestamp.valueOf(row.createdAt()),
