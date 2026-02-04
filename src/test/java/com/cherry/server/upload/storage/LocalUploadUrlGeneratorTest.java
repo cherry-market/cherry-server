@@ -24,7 +24,7 @@ class LocalUploadUrlGeneratorTest {
         UploadUrlResult result = generator.generate("products/original/1.jpg", "image/jpeg");
 
         assertThat(result.uploadUrl())
-                .isEqualTo("http://localhost:8080/api/upload/images?imageKey=products%2Foriginal%2F1.jpg");
+                .isEqualTo("http://localhost:8080/api/upload/images?imageKey=products/original/1.jpg");
         assertThat(result.requiredHeaders()).containsEntry("Content-Type", "image/jpeg");
     }
 

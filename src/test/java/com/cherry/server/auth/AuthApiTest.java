@@ -15,6 +15,7 @@ import com.cherry.server.security.JwtAuthenticationEntryPoint;
 import com.cherry.server.security.JwtAuthenticationFilter;
 import com.cherry.server.security.JwtTokenProvider;
 import com.cherry.server.security.SecurityConfig;
+import com.cherry.server.upload.storage.StorageProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -24,6 +25,7 @@ import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
 
 @WebMvcTest(controllers = AuthController.class)
@@ -35,6 +37,7 @@ import org.springframework.web.server.ResponseStatusException;
         JwtTokenProvider.class,
         GlobalExceptionHandler.class
 })
+@ActiveProfiles("test")
 class AuthApiTest {
 
     @Autowired
@@ -45,6 +48,9 @@ class AuthApiTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private StorageProperties storageProperties;
 
     @Test
     void login_is_permitted_for_anonymous() throws Exception {

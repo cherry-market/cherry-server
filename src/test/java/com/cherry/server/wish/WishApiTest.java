@@ -13,6 +13,7 @@ import com.cherry.server.security.JwtAuthenticationEntryPoint;
 import com.cherry.server.security.JwtAuthenticationFilter;
 import com.cherry.server.security.JwtTokenProvider;
 import com.cherry.server.security.SecurityConfig;
+import com.cherry.server.upload.storage.StorageProperties;
 import com.cherry.server.wish.controller.WishController;
 import com.cherry.server.wish.service.WishService;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = WishController.class)
@@ -33,6 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
         JwtTokenProvider.class,
         GlobalExceptionHandler.class
 })
+@ActiveProfiles("test")
 class WishApiTest {
 
     @Autowired
@@ -46,6 +49,9 @@ class WishApiTest {
 
     @MockBean
     private WishService wishService;
+
+    @MockBean
+    private StorageProperties storageProperties;
 
     @Test
     void add_like_returns_ok_for_authenticated() throws Exception {
