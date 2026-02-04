@@ -45,7 +45,9 @@ public record ProductSummaryResponse(
                 .thumbnailUrl(product.getImages().stream()
                         .filter(img -> img.isThumbnail())
                         .findFirst()
-                        .map(img -> img.getThumbnailUrl() != null ? img.getThumbnailUrl() : img.getImageUrl())
+                        .map(img -> img.getThumbnailUrl() != null
+                                ? img.getThumbnailUrl()
+                                : (img.getImageUrl() != null ? img.getImageUrl() : img.getOriginalUrl()))
                         .orElse(null))
                 .category(CategoryResponse.from(product.getCategory()))
                 .seller(new ProductDetailResponse.SellerResponse(
