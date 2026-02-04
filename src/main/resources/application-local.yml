@@ -28,3 +28,12 @@ spring:
 
 jwt:
   secret: cherry-local-dev-secret-please-change-32bytes
+
+internal:
+  token: ${INTERNAL_TOKEN:}
+
+storage:
+  provider: local
+  base-url: ${STORAGE_BASE_URL:http://localhost:8080/uploads}
+  upload-base-url: ${STORAGE_UPLOAD_BASE_URL:http://localhost:8080/api/upload/images}
+  local-root: ${STORAGE_LOCAL_ROOT:./uploads}

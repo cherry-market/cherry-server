@@ -6,8 +6,10 @@ import com.cherry.server.product.domain.TradeType;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import com.cherry.server.product.domain.ProductImage;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Builder
 public record ProductDetailResponse(
@@ -44,10 +46,10 @@ public record ProductDetailResponse(
                 .status(product.getStatus())
                 .tradeType(product.getTradeType())
                 .imageUrls(product.getImages().stream()
-                        .filter(img -> !img.isThumbnail()) // 썸네일 제외
-                        .sorted(Comparator.comparingInt(img -> img.getImageOrder()))
-                .map(img -> img.getImageUrl())
-                .toList())
+                        .sorted(Comparator.comparingInt(ProductImage::getImageOrder))
+                        .map(ProductImage::getImageUrl)
+                        .filter(Objects::nonNull)
+                        .toList())
                 .category(CategoryResponse.from(product.getCategory()))
                 .tags(product.getProductTags().stream()
                         .map(pt -> pt.getTag().getName())

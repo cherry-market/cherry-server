@@ -1,17 +1,32 @@
 package com.cherry.server.product.service;
 
+import com.cherry.server.product.cache.ProductCacheInvalidator;
+import com.cherry.server.product.domain.Category;
 import com.cherry.server.product.domain.Product;
+import com.cherry.server.product.domain.ProductImage;
+import com.cherry.server.product.domain.ProductStatus;
+import com.cherry.server.product.domain.ProductTag;
+import com.cherry.server.product.domain.Tag;
+import com.cherry.server.product.dto.ProductCreateRequest;
+import com.cherry.server.product.dto.ProductCreateResponse;
 import com.cherry.server.product.dto.ProductDetailResponse;
 import com.cherry.server.product.dto.ProductListResponse;
 import com.cherry.server.product.dto.ProductSearchCondition;
 import com.cherry.server.product.dto.ProductSortBy;
 import com.cherry.server.product.dto.ProductSummaryResponse;
+import com.cherry.server.product.repository.CategoryRepository;
+import com.cherry.server.product.repository.ProductImageRepository;
 import com.cherry.server.product.repository.ProductTagRepository;
 import com.cherry.server.product.repository.ProductRepository;
 import com.cherry.server.product.repository.ProductTrendingRepository;
+import com.cherry.server.product.repository.TagRepository;
+import com.cherry.server.upload.storage.StorageProperties;
+import com.cherry.server.user.domain.User;
+import com.cherry.server.user.repository.UserRepository;
 import com.cherry.server.wish.repository.ProductLikeRepository;
 import com.cherry.server.wish.repository.ProductLikeRepository.ProductLikeCount;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +34,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -40,8 +56,17 @@ public class ProductService {
     private final ProductTrendingRepository productTrendingRepository;
     private final ProductLikeRepository productLikeRepository;
     private final ProductTagRepository productTagRepository;
+    private final ProductImageRepository productImageRepository;
+    private final TagRepository tagRepository;
+    private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
+    private final ProductCacheInvalidator productCacheInvalidator;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final StorageProperties storageProperties;
+
+    @Value("${storage.base-url:}")
+    private String storageBaseUrl;
 
     private static final String PRODUCT_LIST_CACHE_PREFIX = "products:list";
     private static final long PRODUCT_LIST_CACHE_TTL_SECONDS = 300;
@@ -188,6 +213,63 @@ public class ProductService {
         return new ProductListResponse(items, null);
     }
 
+    @Transactional
+    public ProductCreateResponse createProduct(Long userId, ProductCreateRequest request) {
+        User seller = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Category category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+
+        Product product = productRepository.save(Product.builder()
+                .seller(seller)
+                .title(request.title())
+                .description(request.description())
+                .price(request.price())
+                .status(ProductStatus.SELLING)
+                .tradeType(request.tradeType())
+                .category(category)
+                .build());
+
+        List<String> imageKeys = request.imageKeys() == null ? List.of() : request.imageKeys();
+        if (!imageKeys.isEmpty()) {
+            List<ProductImage> images = new ArrayList<>(imageKeys.size());
+            boolean useOriginalAsImageUrl = isLocalStorage();
+            for (int i = 0; i < imageKeys.size(); i++) {
+                String imageKey = imageKeys.get(i);
+                String originalUrl = buildOriginalUrl(imageKey);
+                images.add(ProductImage.builder()
+                        .product(product)
+                        .originalUrl(originalUrl)
+                        .imageUrl(useOriginalAsImageUrl ? originalUrl : null)
+                        .thumbnailUrl(null)
+                        .imageOrder(i)
+                        .isThumbnail(i == 0)
+                        .build());
+            }
+            productImageRepository.saveAll(images);
+        }
+
+        List<String> tagNames = request.tags() == null ? List.of() : request.tags();
+        if (!tagNames.isEmpty()) {
+            List<ProductTag> productTags = new ArrayList<>();
+            for (String raw : tagNames) {
+                if (raw == null || raw.isBlank()) {
+                    continue;
+                }
+                String name = raw.trim();
+                Tag tag = tagRepository.findByName(name)
+                        .orElseGet(() -> tagRepository.save(Tag.builder().name(name).build()));
+                productTags.add(ProductTag.builder().product(product).tag(tag).build());
+            }
+            if (!productTags.isEmpty()) {
+                productTagRepository.saveAll(productTags);
+            }
+        }
+
+        productCacheInvalidator.invalidateProductListCache();
+        return new ProductCreateResponse(product.getId());
+    }
+
     private String buildProductsCacheKey(String cursor, ProductSearchCondition condition, ProductSortBy sortBy, int limit) {
         String filterKey = String.join("|",
                 "status=" + valueOf(condition.status()),
@@ -261,5 +343,25 @@ public class ProductService {
 
     private String valueOf(Object value) {
         return value == null ? "null" : value.toString();
+    }
+
+    private String buildOriginalUrl(String imageKey) {
+        if (imageKey == null || imageKey.isBlank()) {
+            return imageKey;
+        }
+        if (imageKey.startsWith("http://") || imageKey.startsWith("https://")) {
+            return imageKey;
+        }
+        if (storageBaseUrl == null || storageBaseUrl.isBlank()) {
+            return imageKey;
+        }
+        String base = storageBaseUrl.endsWith("/") ? storageBaseUrl.substring(0, storageBaseUrl.length() - 1) : storageBaseUrl;
+        String key = imageKey.startsWith("/") ? imageKey.substring(1) : imageKey;
+        return base + "/" + key;
+    }
+
+    private boolean isLocalStorage() {
+        String provider = storageProperties.provider();
+        return provider != null && provider.equalsIgnoreCase("local");
     }
 }

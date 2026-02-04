@@ -45,7 +45,16 @@ public class SeedDataGenerator {
             LocalDateTime updatedAt
     ) {}
 
-    public record ProductImageRow(Long productId, String imageUrl, int imageOrder, boolean isThumbnail, LocalDateTime createdAt, LocalDateTime updatedAt) {}
+    public record ProductImageRow(
+            Long productId,
+            String imageUrl,
+            String originalUrl,
+            String thumbnailUrl,
+            int imageOrder,
+            boolean isThumbnail,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {}
 
     public record ProductTagRow(Long productId, Long tagId, LocalDateTime createdAt, LocalDateTime updatedAt) {}
 
@@ -108,6 +117,8 @@ public class SeedDataGenerator {
                 productImages.add(new ProductImageRow(
                         productId,
                         SVG_PLACEHOLDER_DATA_URL,
+                        SVG_PLACEHOLDER_DATA_URL,
+                        SVG_PLACEHOLDER_DATA_URL,
                         0,
                         true,
                         createdAt,
@@ -119,6 +130,8 @@ public class SeedDataGenerator {
                     for (int j = 0; j < 3; j++) {
                         productImages.add(new ProductImageRow(
                                 productId,
+                                SVG_PLACEHOLDER_DATA_URL,
+                                SVG_PLACEHOLDER_DATA_URL,
                                 SVG_PLACEHOLDER_DATA_URL,
                                 j,
                                 false,
