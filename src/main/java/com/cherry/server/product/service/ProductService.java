@@ -20,6 +20,7 @@ import com.cherry.server.product.repository.ProductTagRepository;
 import com.cherry.server.product.repository.ProductRepository;
 import com.cherry.server.product.repository.ProductTrendingRepository;
 import com.cherry.server.product.repository.TagRepository;
+import com.cherry.server.upload.storage.StorageProperties;
 import com.cherry.server.user.domain.User;
 import com.cherry.server.user.repository.UserRepository;
 import com.cherry.server.wish.repository.ProductLikeRepository;
@@ -62,6 +63,7 @@ public class ProductService {
     private final ProductCacheInvalidator productCacheInvalidator;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final StorageProperties storageProperties;
 
     @Value("${storage.base-url:}")
     private String storageBaseUrl;
@@ -231,12 +233,14 @@ public class ProductService {
         List<String> imageKeys = request.imageKeys() == null ? List.of() : request.imageKeys();
         if (!imageKeys.isEmpty()) {
             List<ProductImage> images = new ArrayList<>(imageKeys.size());
+            boolean useOriginalAsImageUrl = isLocalStorage();
             for (int i = 0; i < imageKeys.size(); i++) {
                 String imageKey = imageKeys.get(i);
+                String originalUrl = buildOriginalUrl(imageKey);
                 images.add(ProductImage.builder()
                         .product(product)
-                        .originalUrl(buildOriginalUrl(imageKey))
-                        .imageUrl(null)
+                        .originalUrl(originalUrl)
+                        .imageUrl(useOriginalAsImageUrl ? originalUrl : null)
                         .thumbnailUrl(null)
                         .imageOrder(i)
                         .isThumbnail(i == 0)
@@ -354,5 +358,10 @@ public class ProductService {
         String base = storageBaseUrl.endsWith("/") ? storageBaseUrl.substring(0, storageBaseUrl.length() - 1) : storageBaseUrl;
         String key = imageKey.startsWith("/") ? imageKey.substring(1) : imageKey;
         return base + "/" + key;
+    }
+
+    private boolean isLocalStorage() {
+        String provider = storageProperties.provider();
+        return provider != null && provider.equalsIgnoreCase("local");
     }
 }

@@ -27,3 +27,13 @@ cors:
 
 jwt:
   secret: ${JWT_SECRET}
+
+internal:
+  token: ${INTERNAL_TOKEN}
+
+storage:
+  provider: s3
+  bucket: ${STORAGE_BUCKET:cheryi-product-images-prod}
+  region: ${STORAGE_REGION:ap-northeast-2}
+  base-url: ${STORAGE_BASE_URL:https://${storage.bucket}.s3.${storage.region}.amazonaws.com}
+  presign-expire-seconds: ${STORAGE_PRESIGN_EXPIRE_SECONDS:300}

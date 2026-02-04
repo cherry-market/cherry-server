@@ -34,4 +34,28 @@ class UploadControllerTest {
                         .content(payload))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void rejects_missing_files() throws Exception {
+        String payload = """
+                {}
+                """;
+
+        mockMvc.perform(post("/api/upload/images")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejects_missing_content_type() throws Exception {
+        String payload = """
+                {"files":[{"fileName":"a.jpg","contentType":null,"size":1024}]}
+                """;
+
+        mockMvc.perform(post("/api/upload/images")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
 }
