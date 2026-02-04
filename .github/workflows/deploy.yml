@@ -75,6 +75,7 @@ jobs:
             AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
             AWS_REGION=${AWS_REGION}
             INTERNAL_TOKEN=${INTERNAL_TOKEN}
+            STORAGE_BASE_URL=https://cheryi-product-images-prod.s3.ap-northeast-2.amazonaws.com
             EOF
             
             # Secure .env file permissions
