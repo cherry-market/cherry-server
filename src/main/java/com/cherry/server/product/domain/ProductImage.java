@@ -75,4 +75,8 @@ public class ProductImage extends BaseTimeEntity {
         this.imageOrder = imageOrder;
         this.isThumbnail = isThumbnail;
     }
+
+    public boolean isProcessed() {
+        return this.imageUrl != null;
+    }
 }
