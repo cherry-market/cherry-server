@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 public record ImageCallbackRequest(
         @NotBlank String imageKey,
         @NotBlank String detailUrl,
-        @NotBlank String thumbnailUrl,
+        String thumbnailUrl,
         @NotNull Integer imageOrder,
         @NotNull Boolean isThumbnail
 ) {

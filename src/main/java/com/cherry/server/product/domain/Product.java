@@ -60,4 +60,10 @@ public class Product extends BaseTimeEntity {
         this.tradeType = tradeType;
         this.category = category;
     }
+
+    public void activate() {
+        if (this.status == ProductStatus.PENDING) {
+            this.status = ProductStatus.SELLING;
+        }
+    }
 }

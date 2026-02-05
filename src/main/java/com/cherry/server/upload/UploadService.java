@@ -29,11 +29,13 @@ public class UploadService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "files is required");
         }
         List<Item> items = new ArrayList<>(request.files().size());
-        for (UploadImagesRequest.FileMeta file : request.files()) {
+        for (int i = 0; i < request.files().size(); i++) {
+            UploadImagesRequest.FileMeta file = request.files().get(i);
             String extension = normalizeExtension(extractExtension(file.fileName()));
             validateContentTypeMatchesExtension(file.contentType(), extension);
 
-            String imageKey = ORIGINAL_PREFIX + UUID.randomUUID() + "." + extension;
+            String thumbFlag = (i == 0) ? "t" : "f";
+            String imageKey = ORIGINAL_PREFIX + i + "_" + thumbFlag + "_" + UUID.randomUUID() + "." + extension;
             UploadUrlResult result = uploadUrlGenerator.generate(imageKey, file.contentType());
 
             items.add(new Item(

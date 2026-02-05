@@ -54,6 +54,18 @@ public class ProductController {
         return ResponseEntity.ok(productService.getProducts(cursor, limit, userId, condition, sortBy));
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<ProductListResponse> getMyProducts(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit
+    ) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+        return ResponseEntity.ok(productService.getMyProducts(principal.id(), cursor, limit));
+    }
+
     @GetMapping("/{productId}")
     public ResponseEntity<ProductDetailResponse> getProduct(
             @AuthenticationPrincipal UserPrincipal principal,

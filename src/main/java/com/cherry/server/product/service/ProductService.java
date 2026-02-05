@@ -203,6 +203,7 @@ public class ProductService {
         List<ProductSummaryResponse> items = topIds.stream()
                 .filter(productMap::containsKey)
                 .map(productMap::get)
+                .filter(product -> product.getStatus() != ProductStatus.PENDING)
                 .map(product -> ProductSummaryResponse.from(
                         product,
                         likedProductIds.contains(product.getId()),
@@ -220,17 +221,17 @@ public class ProductService {
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
+        List<String> imageKeys = request.imageKeys() == null ? List.of() : request.imageKeys();
+
         Product product = productRepository.save(Product.builder()
                 .seller(seller)
                 .title(request.title())
                 .description(request.description())
                 .price(request.price())
-                .status(ProductStatus.SELLING)
+                .status(imageKeys.isEmpty() ? ProductStatus.SELLING : ProductStatus.PENDING)
                 .tradeType(request.tradeType())
                 .category(category)
                 .build());
-
-        List<String> imageKeys = request.imageKeys() == null ? List.of() : request.imageKeys();
         if (!imageKeys.isEmpty()) {
             List<ProductImage> images = new ArrayList<>(imageKeys.size());
             boolean useOriginalAsImageUrl = isLocalStorage();
@@ -268,6 +269,67 @@ public class ProductService {
 
         productCacheInvalidator.invalidateProductListCache();
         return new ProductCreateResponse(product.getId());
+    }
+
+    public ProductListResponse getMyProducts(Long userId, String cursor, int limit) {
+        LocalDateTime cursorCreatedAt = null;
+        Long cursorId = null;
+
+        if (cursor != null) {
+            try {
+                int underscoreIndex = cursor.lastIndexOf('_');
+                if (underscoreIndex > 0 && underscoreIndex < cursor.length() - 1) {
+                    cursorCreatedAt = LocalDateTime.parse(cursor.substring(0, underscoreIndex));
+                    cursorId = Long.parseLong(cursor.substring(underscoreIndex + 1));
+                }
+            } catch (Exception e) {
+                cursorCreatedAt = null;
+                cursorId = null;
+            }
+        }
+
+        Slice<Product> slice;
+        if (cursorCreatedAt != null && cursorId != null) {
+            slice = productRepository.findBySellerIdWithCursor(userId, cursorCreatedAt, cursorId, PageRequest.of(0, limit));
+        } else {
+            slice = productRepository.findBySellerIdOrderByCreatedAtDescIdDesc(userId, PageRequest.of(0, limit));
+        }
+
+        List<Product> products = slice.getContent();
+        List<Long> productIds = products.stream().map(Product::getId).toList();
+
+        Set<Long> likedProductIds = productIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(productLikeRepository.findLikedProductIds(userId, productIds));
+        Map<Long, Long> likeCountMap = productIds.isEmpty()
+                ? Collections.emptyMap()
+                : productLikeRepository.countByProductIds(productIds).stream()
+                .collect(Collectors.toMap(ProductLikeCount::getProductId, ProductLikeCount::getLikeCount));
+
+        Map<Long, List<String>> tagsMap = productIds.isEmpty()
+                ? Collections.emptyMap()
+                : productTagRepository.findAllByProductIdInWithTag(productIds).stream()
+                .collect(Collectors.groupingBy(
+                        pt -> pt.getProduct().getId(),
+                        Collectors.mapping(pt -> pt.getTag().getName(), Collectors.toList())
+                ));
+
+        List<ProductSummaryResponse> items = products.stream()
+                .map(product -> ProductSummaryResponse.from(
+                        product,
+                        likedProductIds.contains(product.getId()),
+                        likeCountMap.getOrDefault(product.getId(), 0L),
+                        tagsMap.getOrDefault(product.getId(), List.of())
+                ))
+                .toList();
+
+        String nextCursor = null;
+        if (slice.hasNext()) {
+            Product last = products.get(products.size() - 1);
+            nextCursor = last.getCreatedAt().toString() + "_" + last.getId();
+        }
+
+        return new ProductListResponse(items, nextCursor);
     }
 
     private String buildProductsCacheKey(String cursor, ProductSearchCondition condition, ProductSortBy sortBy, int limit) {

@@ -2,6 +2,7 @@ package com.cherry.server.product.repository;
 
 import com.cherry.server.product.domain.Category;
 import com.cherry.server.product.domain.Product;
+import com.cherry.server.product.domain.ProductStatus;
 import com.cherry.server.product.domain.TradeType;
 import com.cherry.server.product.dto.ProductSearchCondition;
 import com.cherry.server.product.dto.ProductSortBy;
@@ -48,6 +49,8 @@ class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         if (condition.status() != null) {
             predicates.add(cb.equal(product.get("status"), condition.status()));
+        } else {
+            predicates.add(cb.notEqual(product.get("status"), ProductStatus.PENDING));
         }
 
         if (condition.tradeType() != null) {

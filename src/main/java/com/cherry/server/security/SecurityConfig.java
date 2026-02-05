@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/internal/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/*/like-status").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/products/my").authenticated()
                         .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
                         .anyRequest().authenticated())
