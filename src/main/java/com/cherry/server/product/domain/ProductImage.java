@@ -69,11 +69,9 @@ public class ProductImage extends BaseTimeEntity {
         this.isThumbnail = isThumbnail;
     }
 
-    public void updateProcessedImage(String imageUrl, String thumbnailUrl, int imageOrder, boolean isThumbnail) {
+    public void updateProcessedImage(String imageUrl, String thumbnailUrl) {
         this.imageUrl = imageUrl;
         this.thumbnailUrl = thumbnailUrl;
-        this.imageOrder = imageOrder;
-        this.isThumbnail = isThumbnail;
     }
 
     public boolean isProcessed() {

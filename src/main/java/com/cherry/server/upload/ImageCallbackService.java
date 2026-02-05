@@ -40,9 +40,7 @@ public class ImageCallbackService {
 
         image.updateProcessedImage(
                 request.detailUrl(),
-                request.thumbnailUrl(),
-                request.imageOrder(),
-                request.isThumbnail()
+                request.thumbnailUrl()
         );
 
         log.info("Image processed: imageKey={}, imageOrder={}, isThumbnail={}",
