@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 
 public record AiGenerateRequest(
         @NotBlank String keywords,
-        @NotBlank String category
+        @NotBlank String category,
+        String personality,
+        String tone
 ) {
 }

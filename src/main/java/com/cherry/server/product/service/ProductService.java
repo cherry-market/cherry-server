@@ -170,8 +170,14 @@ public class ProductService {
         // DB에서 상품 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
-        
-        // Async increment view count
+
+        // PENDING 상품은 판매자 본인만 조회 가능 (404로 존재 자체 숨김)
+        if (product.getStatus() == ProductStatus.PENDING) {
+            if (userId == null || !product.getSeller().getId().equals(userId)) {
+                throw new IllegalArgumentException("Product not found");
+            }
+        }
+
         // 조회수 증가 (Redis에 비동기 저장)
         productTrendingRepository.incrementViewCount(productId);
 
