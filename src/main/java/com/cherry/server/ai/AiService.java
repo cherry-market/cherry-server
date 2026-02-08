@@ -6,37 +6,98 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 public class AiService {
 
+    private static final int DAILY_LIMIT = 5;
+    private static final long COOLDOWN_SECONDS = 10;
+    private static final String DAILY_KEY_PREFIX = "ai:limit:daily:";
+    private static final String COOLDOWN_KEY_PREFIX = "ai:limit:cooldown:";
+
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final StringRedisTemplate redisTemplate;
     private final String apiKey;
 
     public AiService(
             @Value("${gemini.api-key:}") String apiKey,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            StringRedisTemplate redisTemplate
     ) {
         this.apiKey = apiKey;
         this.objectMapper = objectMapper;
+        this.redisTemplate = redisTemplate;
         this.restClient = RestClient.builder()
                 .baseUrl("https://generativelanguage.googleapis.com")
                 .build();
     }
 
-    public AiGenerateResponse generate(AiGenerateRequest request) {
+    public AiGenerateResponse generate(Long userId, AiGenerateRequest request) {
+        checkRateLimit(userId);
+
+        AiGenerateResponse response;
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("Gemini API key not configured, returning fallback");
-            return fallback(request);
+            response = callFallback(request);
+        } else {
+            response = callGemini(request);
         }
 
+        // 성공 시 카운터 증가 + 쿨다운 설정
+        incrementUsage(userId);
+
+        int remaining = getRemainingCount(userId);
+        return new AiGenerateResponse(response.generatedDescription(), remaining);
+    }
+
+    private void checkRateLimit(Long userId) {
+        // 쿨다운 체크
+        String cooldownKey = COOLDOWN_KEY_PREFIX + userId;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "잠시 후 다시 시도해주세요 (10초 쿨다운)");
+        }
+
+        // 일일 횟수 체크
+        String dailyKey = DAILY_KEY_PREFIX + userId;
+        String countStr = redisTemplate.opsForValue().get(dailyKey);
+        int count = countStr != null ? Integer.parseInt(countStr) : 0;
+        if (count >= DAILY_LIMIT) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "오늘 사용 횟수를 초과했습니다 (일일 " + DAILY_LIMIT + "회)");
+        }
+    }
+
+    private void incrementUsage(Long userId) {
+        String dailyKey = DAILY_KEY_PREFIX + userId;
+        Long newCount = redisTemplate.opsForValue().increment(dailyKey);
+        if (newCount != null && newCount == 1) {
+            redisTemplate.expire(dailyKey, 24, TimeUnit.HOURS);
+        }
+
+        String cooldownKey = COOLDOWN_KEY_PREFIX + userId;
+        redisTemplate.opsForValue().set(cooldownKey, "1", COOLDOWN_SECONDS, TimeUnit.SECONDS);
+    }
+
+    public int getRemainingCount(Long userId) {
+        String dailyKey = DAILY_KEY_PREFIX + userId;
+        String countStr = redisTemplate.opsForValue().get(dailyKey);
+        int count = countStr != null ? Integer.parseInt(countStr) : 0;
+        return Math.max(0, DAILY_LIMIT - count);
+    }
+
+    private AiGenerateResponse callGemini(AiGenerateRequest request) {
         try {
             String prompt = buildPrompt(request);
 
@@ -66,13 +127,13 @@ public class AiService {
 
             if (text.isBlank()) {
                 log.warn("Empty response from Gemini API");
-                return fallback(request);
+                return callFallback(request);
             }
 
-            return new AiGenerateResponse(text.trim());
+            return new AiGenerateResponse(text.trim(), 0);
         } catch (Exception e) {
             log.error("Gemini API call failed", e);
-            return fallback(request);
+            return callFallback(request);
         }
     }
 
@@ -129,11 +190,11 @@ public class AiService {
                 );
     }
 
-    private AiGenerateResponse fallback(AiGenerateRequest request) {
+    private AiGenerateResponse callFallback(AiGenerateRequest request) {
         String text = """
                 안녕하세요! %s 판매합니다 ✨
                 상태 좋고 소중히 보관했어요.
                 궁금한 점은 채팅 주세요! 🍒""".formatted(request.keywords());
-        return new AiGenerateResponse(text);
+        return new AiGenerateResponse(text, 0);
     }
 }

@@ -1,4 +1,4 @@
 package com.cherry.server.ai.dto;
 
-public record AiGenerateResponse(String generatedDescription) {
+public record AiGenerateResponse(String generatedDescription, int remainingCount) {
 }
